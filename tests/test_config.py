@@ -192,3 +192,25 @@ class TestConfigFrozen:
         config = load_config()
         with pytest.raises(dataclasses.FrozenInstanceError):
             config.url = "https://evil.example.com"  # type: ignore[misc]
+
+
+class TestVersionOverride:
+    """Tests for OPNSENSE_VERSION, which skips the firmware/status lookup."""
+
+    def test_unset_is_none(self, env_vars):
+        assert load_config().version is None
+
+    def test_empty_is_none(self, env_vars):
+        with patch.dict("os.environ", {"OPNSENSE_VERSION": " "}):
+            assert load_config().version is None
+
+    @pytest.mark.parametrize(("raw", "expected"), [("26.7", (26, 7)), ("24.7", (24, 7)), ("26.7.9", (26, 7))])
+    def test_valid_version(self, env_vars, raw, expected):
+        with patch.dict("os.environ", {"OPNSENSE_VERSION": raw}):
+            assert load_config().version == expected
+
+    @pytest.mark.parametrize("raw", ["abc", "26", "26.x", "-1.7"])
+    def test_invalid_version_raises_error(self, env_vars, raw):
+        with patch.dict("os.environ", {"OPNSENSE_VERSION": raw}):
+            with pytest.raises(ConfigError, match="OPNSENSE_VERSION"):
+                load_config()

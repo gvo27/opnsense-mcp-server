@@ -9,6 +9,9 @@ Environment variables:
     OPNSENSE_ALLOW_SENSITIVE: Permit include_sensitive=true on config
         tools (default: false). Without this, passwords/keys are always
         redacted regardless of tool parameters.
+    OPNSENSE_VERSION: OPNsense version as MAJOR.MINOR, for example 26.7
+        (default: detect it with core/firmware/status, which needs the
+        "System: Firmware" privilege).
 """
 
 from __future__ import annotations
@@ -34,9 +37,13 @@ class OPNsenseConfig:
     verify_ssl: bool
     allow_writes: bool
     allow_sensitive: bool = False
+    version: tuple[int, int] | None = None
 
     def __repr__(self) -> str:
-        return f"OPNsenseConfig(url={self.url!r}, verify_ssl={self.verify_ssl}, allow_writes={self.allow_writes})"
+        return (
+            f"OPNsenseConfig(url={self.url!r}, verify_ssl={self.verify_ssl}, "
+            f"allow_writes={self.allow_writes}, version={self.version})"
+        )
 
 
 def _parse_bool(value: str, var_name: str) -> bool:
@@ -54,6 +61,21 @@ def _parse_bool(value: str, var_name: str) -> bool:
         return False
     msg = f"{var_name} must be true/false, 1/0, or yes/no (got {value!r})"
     raise ConfigError(msg)
+
+
+def _parse_version(value: str) -> tuple[int, int] | None:
+    """Parse OPNSENSE_VERSION as MAJOR.MINOR (a patch part is ignored). Empty means auto-detect.
+
+    Raises:
+        ConfigError: If the value is not MAJOR.MINOR.
+    """
+    if not value:
+        return None
+    parts = value.split(".")[:2]
+    if len(parts) != 2 or not all(part.isdigit() for part in parts):
+        msg = f"OPNSENSE_VERSION must be MAJOR.MINOR, for example 26.7 (got {value!r})"
+        raise ConfigError(msg)
+    return (int(parts[0]), int(parts[1]))
 
 
 def load_config() -> OPNsenseConfig:
@@ -87,6 +109,8 @@ def load_config() -> OPNsenseConfig:
     allow_sensitive_raw = os.environ.get("OPNSENSE_ALLOW_SENSITIVE", "false").strip()
     allow_sensitive = _parse_bool(allow_sensitive_raw, "OPNSENSE_ALLOW_SENSITIVE")
 
+    version = _parse_version(os.environ.get("OPNSENSE_VERSION", "").strip())
+
     return OPNsenseConfig(
         url=url,
         api_key=api_key,
@@ -94,4 +118,5 @@ def load_config() -> OPNsenseConfig:
         verify_ssl=verify_ssl,
         allow_writes=allow_writes,
         allow_sensitive=allow_sensitive,
+        version=version,
     )

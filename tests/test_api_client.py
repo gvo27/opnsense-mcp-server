@@ -829,3 +829,18 @@ class TestSavepointManager:
         result = await mgr.confirm(revision)
         assert result == {"status": "confirmed"}
         assert mgr.active_revision is None
+
+
+class TestVersionOverride:
+    """OPNSENSE_VERSION sets the version, so no firmware/status request is sent."""
+
+    @pytest.mark.parametrize(("version", "snake"), [((26, 7), True), ((25, 7), True), ((24, 7), False)])
+    async def test_override_skips_detection(self, mock_config, mock_httpx_client, version, snake):
+        from dataclasses import replace
+
+        api = OPNsenseAPI(replace(mock_config, version=version))
+        api._client = mock_httpx_client
+        await api._ensure_version_detected()
+        assert api.detected_version == version
+        assert api._use_snake_case is snake
+        mock_httpx_client.get.assert_not_called()

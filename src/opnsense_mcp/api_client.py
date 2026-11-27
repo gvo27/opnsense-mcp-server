@@ -478,8 +478,9 @@ class OPNsenseAPI:
             timeout=httpx.Timeout(30.0),
             follow_redirects=True,
         )
-        self._detected_version: tuple[int, int] | None = None
-        self._use_snake_case: bool = False
+        # OPNSENSE_VERSION skips the lookup, which needs the "System: Firmware" privilege.
+        self._detected_version: tuple[int, int] | None = config.version
+        self._use_snake_case: bool = config.version is not None and config.version >= _VERSION_THRESHOLD
 
     @property
     def detected_version(self) -> tuple[int, int] | None:
