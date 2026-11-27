@@ -135,6 +135,7 @@ Add to your Cursor MCP settings (Settings > MCP):
 | `OPNSENSE_API_SECRET` | *(required)* | API secret from OPNsense user settings |
 | `OPNSENSE_VERIFY_SSL` | `true` | Verify SSL certificate (`false` for self-signed certs) |
 | `OPNSENSE_ALLOW_WRITES` | `false` | Enable write operations (firewall rules, service control) |
+| `OPNSENSE_VERSION` | *(auto-detect)* | OPNsense version as `MAJOR.MINOR` (e.g. `26.7`). Skips the `core/firmware/status` lookup, so a read-only key without the "System: Firmware" privilege works |
 | `OPNSENSE_ALLOW_SENSITIVE` | `false` | Permit `include_sensitive=true` on the config tools; without it, passwords and keys are always redacted |
 
 **Custom ports:** If your OPNsense web GUI runs on a non-standard port (e.g., 10443), include it in the URL: `https://192.168.1.1:10443/api`
